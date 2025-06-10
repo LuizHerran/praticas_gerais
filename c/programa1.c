@@ -1,13 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
     int i = 0;
     char linhas[250];
 
 typedef struct{
     int DH;
-    char sensor[5];
+    char sensor[10];
+    char dc[16];
+    int di;
+    bool db;
     float dds;
 }DADOS;
 
@@ -30,20 +34,52 @@ int abrirarquivo(DADOS dados[]){
         // Sensores
         tk = strtok(NULL, " ");
         if(strlen(tk) >= sizeof(dados[i].sensor)){
-            printf("Estouro de memoria em Sensores!");
+            printf("\nEstouro de memoria em Sensores!\n");
         }
         strcpy(dados[i].sensor, tk);
 
-        // Dados
-        tk = strtok(NULL, " ");
-        dados[i].dds = atof(tk);
+        //troca de formto de dados para cada sensor
+        if(strcmp(dados[i].sensor, "TEM")){
+            tk=strtok(NULL, " ");
+            if(strlen(tk) >= sizeof(dados[i].sensor)){
+            printf("Estouro de memoria em dados dos sensores!");
+            }
+            strcpy(dados[i].dc, tk);
+            printf("\n%d - %d - %s - %.2f\n", i, dados[i].DH, dados[i].sensor, dados[i].dds);
+        }else if(strcmp(dados[i].sensor, "VIB")){
+            tk = strtok(NULL, " ");
+            dados[i].dds = atof(tk);
+            
+        }else if(strcmp(dados[i].sensor, "PRE")){
+            tk = strtok(NULL, " ");
+            dados[i].db = atoi(tk);
+            
+        }else if(strcmp(dados[i].sensor, "SON")){
+            tk = strtok(NULL, " ");
+            dados[i].di = atoi(tk);    
+        }else printf("Erro na leitura dos dados do sensor %s\n", dados[i].sensor);
         i++;
+        }
+        
+
+        for (int j = 0; j < i; j++){
+                if(strcmp(dados[j].sensor, "PRE")){
+                    printf(" %-12d | %-5s | %-10.d\n", dados[j].DH, dados[j].sensor, dados[j].db);
+                }else if(strcmp(dados[j].sensor, "TEM")){
+                    printf(" %-12d | %-5s | %-10.s\n", dados[j].DH, dados[j].sensor, dados[j].dc);
+                }else if(strcmp(dados[j].sensor, "VIB")){
+                    printf(" %-12d | %-5s | %-10.2f\n", dados[j].DH, dados[j].sensor, dados[j].dds);
+                }else if(strcmp(dados[j].sensor, "SON")){
+                    printf(" %-12d | %-5s | %-10.d\n", dados[j].DH, dados[j].sensor, dados[j].di);
+                }else printf("Erro ao ler!\n");
+            }
+
+
+        fclose(arc);
+        return 0;
     }
 
-    fclose(arc);
-    return 0;
-}
-    
+//ordenar por data e hora
 void orddh(DADOS dados[]){
     
     int aux;
@@ -67,6 +103,7 @@ void orddh(DADOS dados[]){
 
 }
 
+//Criar novo arquivo
 int narc(DADOS dados[]){
 
     FILE *narc = fopen("Dados_por_Data_e_Hora.txt", "w");
@@ -75,7 +112,17 @@ int narc(DADOS dados[]){
     }
 
     for(int j = 0; j < i; j++){
-        fprintf(narc, "%d, %s, %.2f\n", dados[j].DH, dados[j].sensor, dados[j].dds);
+        if(strcmp(dados[i].sensor, "VIB")){
+            fprintf(narc, "%d, %s, %.2f\n", dados[j].DH, dados[j].sensor, dados[j].dds);
+        }else if(strcmp(dados[i].sensor, "PRE")){
+            fprintf(narc, "%d, %s, %d\n", dados[j].DH, dados[j].sensor, dados[j].db);
+        }else if(strcmp(dados[i].sensor, "SON")){
+            fprintf(narc, "%d, %s, %d\n", dados[j].DH, dados[j].sensor, dados[j].di);
+        }else if(strcmp(dados[i].sensor, "TEM")){
+            fprintf(narc, "%d, %s, %s\n", dados[j].DH, dados[j].sensor, dados[j].dc);
+        }else{
+            perror("Erro ao ordenar os arquivos!");
+        }
     }
     fclose(narc);
     printf("\nDados salvos com sucesso!\n");
@@ -96,8 +143,7 @@ int senpres(DADOS dados[]){
     for(int j = 0; j < i; j++){
         
         if(cascii(dados[j].sensor) == 80){
-
-            fprintf(at, "%d, %s, %.2f\n", dados[j].DH, dados[j].sensor, dados[j].dds);
+            fprintf(at, "%d, %s, %d\n", dados[j].DH, dados[j].sensor, dados[j].db);
             fflush(at);
         }
     }
@@ -116,8 +162,7 @@ int sentemp(DADOS dados[]){
     for(int j = 0; j < i; j++){
         
         if(cascii(dados[j].sensor) == 84){
-
-            fprintf(at, "%d, %s, %.2f\n", dados[j].DH, dados[j].sensor, dados[j].dds);
+            fprintf(at, "%d, %s, %s\n", dados[j].DH, dados[j].sensor, dados[j].dc);
             fflush(at);
         }
     }
@@ -136,12 +181,30 @@ int senvib(DADOS dados[]){
     for(int j = 0; j < i; j++){
         
         if(cascii(dados[j].sensor) == 86){
-
             fprintf(at, "%d, %s, %.2f\n", dados[j].DH, dados[j].sensor, dados[j].dds);
             fflush(at);
         }
     }
     printf("Arquivo de sensores de Vibracao criado com sucessor!");
+    fclose(at);
+    return 0;
+}
+
+int senson(DADOS dados[]){
+    FILE *at = fopen("Dados_Sonoros.txt", "w");
+    if(at == NULL){
+        perror("Erro ao gerar arquivo Sonoro: ");
+        return 1;
+    }
+
+    for(int j = 0; j < i; j++){
+        
+        if(cascii(dados[j].sensor) == 86){
+            fprintf(at, "%d, %s, %d\n", dados[j].DH, dados[j].sensor, dados[j].di);
+            fflush(at);
+        }
+    }
+    printf("Arquivo de sensores sonoros criado com sucessor!");
     fclose(at);
     return 0;
 }
@@ -164,7 +227,15 @@ int main(){
             switch(opc){
             case 1:
             for (int j = 0; j < i; j++){
-                printf(" %-12d | %-5s | %-10.2f\n", dd[j].DH, dd[j].sensor, dd[j].dds);
+                if(strcmp(dd[j].sensor, "PRE")){
+                    printf(" %-12d | %-5s | %-10.d\n", dd[j].DH, dd[j].sensor, dd[j].db);
+                }else if(strcmp(dd[j].sensor, "TEM")){
+                    printf(" %-12d | %-5s | %-10.s\n", dd[j].DH, dd[j].sensor, dd[j].dc);
+                }else if(strcmp(dd[j].sensor, "VIB")){
+                    printf(" %-12d | %-5s | %-10.2f\n", dd[j].DH, dd[j].sensor, dd[j].dds);
+                }else if(strcmp(dd[j].sensor, "SON")){
+                    printf(" %-12d | %-5s | %-10.d\n", dd[j].DH, dd[j].sensor, dd[j].di);
+                }else printf("Erro ao ler!\n");
             }
             break;
 
@@ -179,6 +250,8 @@ int main(){
                 printf("||\t1 - Sensor de Temperatura\n");
                 printf("||\t2 - Sensor de Vibracao\n");
                 printf("||\t3 - Sensor de Pressao\n");
+                printf("||\t4 - Sensor Sonor");
+                printf("||\t5 - Sair");
                 printf("\\\\=====================================//");
                 scanf("%d", &opc2);
                 
@@ -195,8 +268,14 @@ int main(){
                     case 3:
                         senpres(dd);
                     break;
-                }
 
+                    case 4:
+                        senson(dd);
+                    break;
+
+                    case 5:
+                    break;
+                }
             break;
 
             case 4:
@@ -205,5 +284,4 @@ int main(){
                 }while(opc2 != 4);
             }
         }while(opc != 5);
-        
 }

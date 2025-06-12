@@ -5,10 +5,10 @@
 
 #define MAX_LINHAS 10000
 
-typedef struct
-{
+typedef struct{
     time_t timestamp;
     float valor;
+    char va[16];
 } TIME;
 
 // Compara duas TIMEs
@@ -35,42 +35,51 @@ int busca_binaria(TIME TIMEs[], int n, time_t alvo)
         int meio = (ini + fim) / 2;
         long diferenca = labs(difftime(TIMEs[meio].timestamp, alvo));
 
-        if (menor_diferenca == -1 || diferenca < menor_diferenca)
-        {
+        if (menor_diferenca == -1 || diferenca < menor_diferenca){
             menor_diferenca = diferenca;
             melhor_indice = meio;
         }
 
-        if (TIMEs[meio].timestamp < alvo)
-        {
+        if (TIMEs[meio].timestamp < alvo){
             ini = meio + 1;
         }
-        else if (TIMEs[meio].timestamp > alvo)
-        {
+        else if (TIMEs[meio].timestamp > alvo){
             fim = meio - 1;
         }
-        else
-        {
+        else{
             return meio;
         }
     }
     return melhor_indice;
 }
 
-int main()
-{
+int main(){
     char sens[10];
     char dh[20];
-
+    int ver = 0;
     printf("//==================================================================================\\\\\n");
     printf("||\n");
-    printf("||\t\tTEM - Temperatura, PRE - Pressao, VIB - Vibracao\n");
+    printf("||\t\tTEM - Temperatura, PRE - Pressao, VIB - Vibracao, SON - Sonoro\n");
     printf("||\n");
     printf("||\t Informe o nome do sensor:");
-    scanf("%s", sens);
+    scanf(" %s", sens);
+    ver = strcmp(sens, "TEMP");
+    ver = strcmp(sens, "PRE");
+    ver = strcmp(sens, "VIB");
+    ver = strcmp(sens, "SON");
+    if(ver != 0){
+    printf("\n//========================================\\\\");
+    printf("\n||\n");
+    printf("||\tSensor invalido!\n");
+    printf("||\n");
+    printf("\\\\=======================================//\n");
+    return(1);
+    }
     printf("||\n");
     printf("\r||\tInforme a data e hora (DD-MM-AAAA HH:MM:SS): ");
     getchar();
+
+
 
     fgets(dh, sizeof(dh), stdin);
     dh[strcspn(dh, "\n")] = 0;
@@ -88,8 +97,7 @@ int main()
 
     // Arquivo completo
     FILE *fp = fopen("dados.txt", "r");
-    if (!fp)
-    {
+    if (!fp){
         perror("Erro ao abrir o arquivo:\n");
         return 1;
     }
@@ -98,32 +106,44 @@ int main()
     int total = 0;
 
     char linha[100];
-    while (fgets(linha, sizeof(linha), fp))
-    {
+    while (fgets(linha, sizeof(linha), fp)){
         time_t ts;
         char sens_lido[10];
         float valor;
+        char va[16];
 
-        if (sscanf(linha, "%ld %s %f", &ts, sens_lido, &valor) == 3)
-        {
-            if (strcmp(sens_lido, sens) == 0)
-            {
-                if (total < MAX_LINHAS)
-                {
+        if(strcmp(sens, "TEM") == 0){
+            if (sscanf(linha, "%ld %s %s", &ts, sens_lido, va) == 3){
+            if (strcmp(sens_lido, sens) == 0){
+                if (total < MAX_LINHAS){
+                    TIMEs[total].timestamp = ts;
+                    for (int i = 0; i < 16; i++) {
+                        if(sizeof(TIMEs[total].va[i] <= sizeof(TIMEs[total].va[i]))){
+                            TIMEs[total].va[i] = va[i];
+                        }
+                    }
+                    total++;
+                }
+            }
+        }
+        }
+        else{
+            if (sscanf(linha, "%ld %s %f", &ts, sens_lido, &valor) == 3){
+            if (strcmp(sens_lido, sens) == 0){
+                if (total < MAX_LINHAS){
                     TIMEs[total].timestamp = ts;
                     TIMEs[total].valor = valor;
                     total++;
                 }
             }
         }
+        }
     }
     fclose(fp);
-
-    if (total == 0)
-    {
-        printf("//=========================================\\\\n");
-        printf("Nenhuma TIME encontrada para o sensor %s.\n", sens);
-        printf("\\\\========================================//");
+    if (total == 0){
+        printf("\n//==============================================\\\n");
+        printf("|| Nenhuma TIME encontrada para o sensor %s.\n", sens);
+        printf("\\\\==============================================//\n");
         return 1;
     }
 
@@ -132,23 +152,44 @@ int main()
 
     // TIME mais próxima
     int indice = busca_binaria(TIMEs, total, momento);
-    if (indice >= 0)
-    {
-        struct tm *tm_info = localtime(&TIMEs[indice].timestamp);
-        char buffer[20];
-        strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", tm_info);
 
-        printf("\n//=======================================\\\\");
-        printf("\n||\n");
-        printf("||\tData e hora mais proxima:\n");
-        printf("||\tTimestamp: %s\n", buffer);
-        printf("||\tValor: %.2f\n", TIMEs[indice].valor);
-        printf("\\\\======================================//");
+    struct tm *tm_info = localtime(&TIMEs[indice].timestamp);
+    char buffer[20];
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", tm_info);
+
+    if (indice >= 0){
+        if(strcmp(sens, "PRE") == 0){
+            printf("\n//=======================================\\\\");
+            printf("\n||\n");
+            printf("||\tData e hora mais proxima:\n");
+            printf("||\tTimestamp: %s\n", buffer);
+            printf("||\tValor: %s\n", (TIMEs[indice].valor == 1 ? "True" : "False"));
+            printf("\\\\======================================//");
+        }else if(strcmp(sens, "TEM") == 0){
+            printf("\n//=======================================\\\\");
+            printf("\n||\n");
+            printf("||\tData e hora mais proxima:\n");
+            printf("||\tTimestamp: %s\n", buffer);
+            printf("||\tValor: %s\n", TIMEs[indice].va);
+            printf("\\\\======================================//");  
+        }else if(strcmp(sens, "VIB") == 0){
+            printf("\n//=======================================\\\\");
+            printf("\n||\n");
+            printf("||\tData e hora mais proxima:\n");
+            printf("||\tTimestamp: %s\n", buffer);
+            printf("||\tValor: %.2f\n", TIMEs[indice].valor);
+            printf("\\\\======================================//");  
+        }else if(strcmp(sens, "SON") == 0){
+            printf("\n//=======================================\\\\");
+            printf("\n||\n");
+            printf("||\tData e hora mais proxima:\n");
+            printf("||\tTimestamp: %s\n", buffer);
+            printf("||\tValor: %.1f\n", TIMEs[indice].valor);
+            printf("\\\\======================================//"); 
+        }else printf("Erro ao ler!\n");
     }
-    else
-    {
+    else{
         printf("\nNenhuma TIME encontrada.\n");
     }
-
     return 0;
 }
